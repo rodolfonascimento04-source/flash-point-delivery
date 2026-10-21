@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SuperApp Delivery - Comidas, Bebidas, Farmácia & Lojas</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                        },
+                        food: '#f43f5e',
+                        drinks: '#f59e0b',
+                        pharma: '#0284c7',
+                        store: '#8b5cf6'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        /* Custom Scrollbar */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Glassmorphism Effect */
+        .glass {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .dark .glass {
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        /* Animations */
+        .slide-up {
+            animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .toast-slide {
+            animation: toastSlide 0.3s ease-out forwards, toastFadeOut 0.3s 2.2s ease-in forwards;
+        }
+        @keyframes toastSlide {
+            from { transform: translateY(-100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes toastFadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        .pulse-subtle {
+            animation: pulseSubtle 2s infinite;
+        }
+        @keyframes pulseSubtle {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+    </style>
+</head>
+<body class="bg-slate-900 h-full flex justify-center items-center p-0 sm:p-4 md:p-6 transition-colors duration-200">
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none w-full max-w-xs px-4"></div>
+
+    <!-- MAIN APP MOBILE FRAME CONTAINER -->
+    <div id="app-container" class="relative w-full max-w-md h-full sm:h-[850px] bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 sm:rounded-[40px] shadow-2xl overflow-hidden flex flex-col sm:border-[8px] sm:border-slate-800 transition-colors duration-300">
+        
+        <!-- TOP DEVICE STATUS BAR -->
+        <div class="px-6 pt-3 pb-1 flex justify-between items-center text-xs font-semibold z-30 select-none bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
+            <span id="current-time">19:42</span>
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-signal text-[10px]"></i>
+                <i class="fa-solid fa-wifi text-[10px]"></i>
+                <i class="fa-solid fa-battery-full text-xs"></i>
+            </div>
+        </div>
+
+        <!-- STICKY HEADER -->
+        <header class="px-4 pt-2 pb-3 bg-white dark:bg-slate-900 shadow-sm z-20 transition-colors duration-200">
+            <!-- Address, Notifications, Theme Toggle -->
+            <div class="flex justify-between items-center mb-3">
+                <div onclick="openAddressModal()" class="flex items-center space-x-2 cursor-pointer group">
+                    <div class="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                        <i class="fa-solid fa-location-dot text-sm"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-1">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Entregar em</span>
+                            <i class="fa-solid fa-chevron-down text-[10px] text-emerald-600 dark:text-emerald-400 group-hover:translate-y-0.5 transition-transform"></i>
+                        </div>
+                        <p id="user-address-text" class="text-xs font-bold truncate max-w-[170px]">Rua das Flores, 123 - Centro</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-2">
+                    <button onclick="toggleDarkMode()" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
+                        <i id="theme-icon" class="fa-solid fa-moon text-xs"></i>
+                    </button>
+                    <button onclick="showNotifications()" class="relative w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center">
+                        <i class="fa-solid fa-bell text-xs"></i>
+                        <span class="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full"></span>
+                    </button>
+                    <button onclick="openCartModal()" class="relative w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                        <i class="fa-solid fa-bag-shopping text-sm"></i>
+                        <span id="header-cart-badge" class="hidden absolute -top-1 -right-1 bg-rose-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">0</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                <input type="text" id="search-input" oninput="handleSearch(this.value)" placeholder="Buscar lojas, bebidas, remédios ou pratos..." 
+                       class="w-full pl-9 pr-8 py-2 bg-slate-100 dark:bg-slate-800 text-xs rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 dark:text-slate-100 placeholder-slate-400 transition">
+                <button onclick="clearSearch()" id="clear-search-btn" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-xs"></i>
+                </button>
+            </div>
+
+            <!-- Category Pills Navigation -->
+            <div class="flex space-x-2 overflow-x-auto no-scrollbar pt-3" id="main-category-pills">
+                <!-- Injected Dynamically -->
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT AREA -->
+        <main id="main-content" class="flex-1 overflow-y-auto no-scrollbar pb-24 space-y-5 px-4 pt-3">
+            
+            <!-- FEATURED PROMO BANNER CAROUSEL -->
+            <section class="relative w-full rounded-2xl overflow-hidden shadow-md group">
+                <img id="banner-img" src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80" alt="Promoção" class="w-full h-32 object-cover transition duration-500">
+                <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-transparent p-3.5 flex flex-col justify-end">
+                    <span id="banner-tag" class="bg-rose-600 text-white text-[9px] font-bold tracking-wider px-2 py-0.5 rounded-full w-max uppercase mb-1">Cupom da Semana</span>
+                    <h2 id="banner-title" class="text-white text-base font-bold leading-tight">R$ 10 OFF no seu primeiro pedido!</h2>
+                    <p id="banner-sub" class="text-slate-300 text-[11px]">Use o cupom PRIMEIRA10 na finalização</p>
+                </div>
+            </section>
+
+            <!-- 4 MAIN QUICK ACCESS CATEGORIES GRID -->
+            <section class="grid grid-cols-4 gap-2">
+                <!-- 1. Comidas -->
+                <div onclick="switchMainCategory('food')" class="bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 p-2.5 rounded-2xl flex flex-col items-center cursor-pointer hover:scale-[1.03] transition">
+                    <div class="w-10 h-10 rounded-full bg-rose-500 text-white flex items-center justify-center text-lg mb-1 shadow-sm">
+                        <i class="fa-solid fa-utensils"></i>
+                    </div>
+                    <span class="text-[11px] font-bold text-rose-700 dark:text-rose-400">Comidas</span>
+                    <span class="text-[8px] text-slate-500 text-center">Pizzas, Burguer</span>
+                </div>
+
+                <!-- 2. Bebidas -->
+                <div onclick="switchMainCategory('drinks')" class="bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 p-2.5 rounded-2xl flex flex-col items-center cursor-pointer hover:scale-[1.03] transition">
+                    <div class="w-10 h-10 rounded-full bg-amber-500 text-white flex items-center justify-center text-lg mb-1 shadow-sm">
+                        <i class="fa-solid fa-wine-bottle"></i>
+                    </div>
+                    <span class="text-[11px] font-bold text-amber-700 dark:text-amber-400">Bebidas</span>
+                    <span class="text-[8px] text-slate-500 text-center">Cerveja Gelada</span>
+                </div>
+
+                <!-- 3. Farmácia -->
+                <div onclick="switchMainCategory('pharma')" class="bg-sky-50 dark:bg-sky-500/10 border border-sky-100 dark:border-sky-500/20 p-2.5 rounded-2xl flex flex-col items-center cursor-pointer hover:scale-[1.03] transition">
+                    <div class="w-10 h-10 rounded-full bg-sky-500 text-white flex items-center justify-center text-lg mb-1 shadow-sm">
+                        <i class="fa-solid fa-prescription-bottle-medical"></i>
+                    </div>
+                    <span class="text-[11px] font-bold text-sky-700 dark:text-sky-400">Farmácia</span>
+                    <span class="text-[8px] text-slate-500 text-center">Remédios 24h</span>
+                </div>
+
+                <!-- 4. Lojas Físicas -->
+                <div onclick="switchMainCategory('store')" class="bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 p-2.5 rounded-2xl flex flex-col items-center cursor-pointer hover:scale-[1.03] transition">
+                    <div class="w-10 h-10 rounded-full bg-purple-500 text-white flex items-center justify-center text-lg mb-1 shadow-sm">
+                        <i class="fa-solid fa-store"></i>
+                    </div>
+                    <span class="text-[11px] font-bold text-purple-700 dark:text-purple-400">Lojas</span>
+                    <span class="text-[8px] text-slate-500 text-center">Pet, Tech, Mercados</span>
+                </div>
+            </section>
+
+            <!-- STORES LISTING SECTION -->
+            <section>
+                <div class="flex justify-between items-center mb-3">
+                    <h3 id="section-title" class="text-sm font-bold flex items-center gap-2">
+                        <i class="fa-solid fa-star text-amber-500"></i> Estabelecimentos em Destaque
+                    </h3>
+                    <span id="stores-count" class="text-[11px] text-slate-500">0 encontrados</span>
+                </div>
+
+                <div id="stores-container" class="space-y-3">
+                    <!-- Stores rendered dynamically -->
+                </div>
+            </section>
+
+        </main>
+
+        <!-- FLOATING BOTTOM MINI-CART BAR -->
+        <div id="floating-cart-bar" class="hidden absolute bottom-16 left-3 right-3 z-30">
+            <button onclick="openCartModal()" class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white p-3 rounded-2xl flex justify-between items-center shadow-xl shadow-emerald-600/30 transition">
+                <div class="flex items-center space-x-2.5">
+                    <span id="mini-cart-qty" class="bg-white text-emerald-700 text-xs font-black w-6 h-6 rounded-full flex items-center justify-center">0</span>
+                    <span class="text-xs font-bold">Ver Sacola de Compras</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span id="mini-cart-total" class="text-xs font-extrabold">R$ 0,00</span>
+                    <i class="fa-solid fa-chevron-right text-xs"></i>
+                </div>
+            </button>
+        </div>
+
+        <!-- BOTTOM TAB NAVIGATION -->
+        <nav class="absolute bottom-0 left-0 right-0 glass border-t border-slate-200 dark:border-slate-800 px-4 py-2 z-30 flex justify-around items-center text-slate-400">
+            <button onclick="switchNavTab('home')" id="nav-home" class="flex flex-col items-center space-y-0.5 text-emerald-600 dark:text-emerald-400">
+                <i class="fa-solid fa-house text-base"></i>
+                <span class="text-[10px] font-semibold">Início</span>
+            </button>
+            <button onclick="focusSearch()" id="nav-search" class="flex flex-col items-center space-y-0.5 hover:text-slate-600 dark:hover:text-slate-200">
+                <i class="fa-solid fa-magnifying-glass text-base"></i>
+                <span class="text-[10px] font-semibold">Busca</span>
+            </button>
+            <button onclick="openOrdersModal()" id="nav-orders" class="flex flex-col items-center space-y-0.5 hover:text-slate-600 dark:hover:text-slate-200 relative">
+                <i class="fa-solid fa-receipt text-base"></i>
+                <span class="text-[10px] font-semibold">Pedidos</span>
+                <span id="active-order-badge" class="hidden absolute top-0 right-2 w-2 h-2 bg-emerald-500 rounded-full animate-ping"></span>
+            </button>
+            <button onclick="openProfileModal()" id="nav-profile" class="flex flex-col items-center space-y-0.5 hover:text-slate-600 dark:hover:text-slate-200">
+                <i class="fa-solid fa-user text-base"></i>
+                <span class="text-[10px] font-semibold">Perfil</span>
+            </button>
+        </nav>
+
+        <!-- ================= MODALS & SLIDE-UP VIEWS ================= -->
+
+        <!-- STORE DETAILS & CATALOG VIEW MODAL -->
+        <div id="store-modal" class="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm hidden flex flex-col justify-end">
+            <div class="bg-white dark:bg-slate-900 w-full h-[92%] rounded-t-3xl overflow-hidden flex flex-col slide-up">
+                
+                <!-- Store Banner Cover -->
+                <div class="relative h-36 bg-slate-200 dark:bg-slate-800">
+                    <img id="store-modal-cover" src="" class="w-full h-full object-cover" alt="Capa da Loja">
+                    <button onclick="closeStoreModal()" class="absolute top-3 left-3 w-8 h-8 rounded-full bg-slate-900/60 text-white flex items-center justify-center backdrop-blur-md">
+                        <i class="fa-solid fa-arrow-left text-xs"></i>
+                    </button>
+                    <span id="store-modal-badge" class="absolute bottom-3 left-3 bg-white/90 dark:bg-slate-900/90 text-[10px] font-bold px-2.5 py-1 rounded-full backdrop-blur-md"></span>
+                </div>
+
+                <!-- Store Header Info -->
+                <div class="p-4 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h2 id="store-modal-name" class="text-lg font-bold"></h2>
+                            <p id="store-modal-desc" class="text-xs text-slate-500 mb-2"></p>
+                        </div>
+                        <div id="store-modal-rating" class="flex items-center space-x-1 bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-1 rounded-lg text-xs font-bold">
+                            <i class="fa-solid fa-star"></i>
+                            <span id="store-modal-rating-val">4.8</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4 text-[11px] text-slate-500 font-medium pt-1">
+                        <span><i class="fa-regular fa-clock mr-1 text-emerald-600"></i><span id="store-modal-time">25-35 min</span></span>
+                        <span><i class="fa-solid fa-motorcycle mr-1 text-emerald-600"></i><span id="store-modal-fee">R$ 5,90</span></span>
+                        <span><i class="fa-solid fa-location-arrow mr-1 text-emerald-600"></i><span id="store-modal-dist">1.2 km</span></span>
+                    </div>
+                </div>
+
+                <!-- Product Catalog List -->
+                <div id="store-modal-items" class="flex-1 overflow-y-auto no-scrollbar p-4 space-y-3">
+                    <!-- Products injected dynamically -->
+                </div>
+
+                <div class="p-3 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
+                    <button onclick="closeStoreModal()" class="w-full py-2.5 bg-slate-100 dark:bg-slate-800 font-semibold rounded-xl text-xs">
+                        Continuar NAVEGANDO
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CART & CHECKOUT DRAWER -->
+        <div id="cart-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex flex-col justify-end">
+            <div class="bg-white dark:bg-slate-900 w-full max-h-[90%] rounded-t-3xl overflow-hidden flex flex-col slide-up">
+                
+                <!-- Cart Header -->
+                <div class="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                    <h3 class="text-sm font-bold flex items-center gap-2">
+                        <i class="fa-solid fa-bag-shopping text-emerald-600"></i> Sacola de Compras
+                    </h3>
+                    <button onclick="closeCartModal()" class="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500">
+                        <i class="fa-solid fa-xmark text-xs"></i>
+                    </button>
+                </div>
+
+                <!-- Cart Items List -->
+                <div id="cart-items-container" class="flex-1 overflow-y-auto no-scrollbar p-4 space-y-3 max-h-[280px]">
+                    <!-- Items rendered dynamically -->
+                </div>
+
+                <!-- Coupon & Order Summary -->
+                <div class="p-4 bg-slate-50 dark:bg-slate-800/40 border-t border-slate-100 dark:border-slate-800 space-y-3">
+                    <!-- Coupon Input -->
+                    <div class="flex gap-2">
+                        <input type="text" id="coupon-input" placeholder="Cupom (ex: PRIMEIRA10, BEBIDAS30)" class="flex-1 px-3 py-2 text-xs bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 uppercase focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                        <button onclick="applyCoupon()" class="px-3.5 py-2 bg-slate-800 dark:bg-slate-700 text-white text-xs font-semibold rounded-xl hover:bg-slate-900">Aplicar</button>
+                    </div>
+
+                    <!-- Price Calculations -->
+                    <div class="space-y-1 text-xs text-slate-500">
+                        <div class="flex justify-between">
+                            <span>Subtotal</span>
+                            <span id="cart-subtotal">R$ 0,00</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Taxa de Entrega</span>
+                            <span id="cart-fee">R$ 0,00</span>
+                        </div>
+                        <div id="discount-row" class="flex justify-between text-emerald-600 dark:text-emerald-400 font-semibold hidden">
+                            <span>Desconto de Cupom</span>
+                            <span id="cart-discount">-R$ 0,00</span>
+                        </div>
+                        <div class="flex justify-between text-sm font-bold text-slate-800 dark:text-slate-100 pt-2 border-t border-slate-200 dark:border-slate-700">
+                            <span>Total</span>
+                            <span id="cart-total" class="text-emerald-600 dark:text-emerald-400">R$ 0,00</span>
+                        </div>
+                    </div>
+
+                    <button onclick="goToCheckout()" class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white py-3 rounded-xl font-bold text-xs shadow-lg shadow-emerald-600/20 transition">
+                        Avançar para Pagamento
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CHECKOUT MODAL -->
+        <div id="checkout-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex flex-col justify-end">
+            <div class="bg-white dark:bg-slate-900 w-full h-[92%] rounded-t-3xl overflow-hidden flex flex-col slide-up">
+                
+                <div class="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                    <button onclick="closeCheckoutModal()" class="text-slate-500 text-xs font-semibold flex items-center gap-1">
+                        <i class="fa-solid fa-chevron-left text-[10px]"></i> Voltar
+                    </button>
+                    <h3 class="text-sm font-bold">Finalizar Pedido</h3>
+                    <div class="w-10"></div>
+                </div>
+
+                <div class="flex-1 overflow-y-auto no-scrollbar p-4 space-y-4">
+                    <!-- Delivery Address Box -->
+                    <div class="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <i class="fa-solid fa-house-user text-emerald-600 text-base"></i>
+                            <div>
+                                <h4 class="text-xs font-bold">Endereço de Entrega</h4>
+                                <p id="checkout-address-text" class="text-[11px] text-slate-500 truncate max-w-[200px]">Rua das Flores, 123 - Centro</p>
+                            </div>
+                        </div>
+                        <button onclick="openAddressModal()" class="text-[11px] text-emerald-600 font-bold">Trocar</button>
+                    </div>
+
+                    <!-- Payment Option Tabs -->
+                    <div>
+                        <h4 class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">Forma de Pagamento</h4>
+                        <div class="space-y-2">
+                            <label class="flex items-center justify-between p-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 cursor-pointer hover:border-emerald-500">
+                                <div class="flex items-center space-x-3">
+                                    <i class="fa-brands fa-pix text-emerald-500 text-base"></i>
+                                    <div>
+                                        <p class="text-xs font-bold">PIX</p>
+                                        <p class="text-[10px] text-slate-400">Aprovação e desconto imediato</p>
+                                    </div>
+                                </div>
+                                <input type="radio" name="payment" value="pix" checked onchange="togglePaymentDetails()" class="accent-emerald-600">
+                            </label>
+
+                            <label class="flex items-center justify-between p-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 cursor-pointer hover:border-emerald-500">
+                                <div class="flex items-center space-x-3">
+                                    <i class="fa-solid fa-credit-card text-blue-500 text-base"></i>
+                                    <div>
+                                        <p class="text-xs font-bold">Cartão de Crédito/Débito</p>
+                                        <p class="text-[10px] text-slate-400">Maquininha na entrega</p>
+                                    </div>
+                                </div>
+                                <input type="radio" name="payment" value="card" onchange="togglePaymentDetails()" class="accent-emerald-600">
+                            </label>
+
+                            <label class="flex items-center justify-between p-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 cursor-pointer hover:border-emerald-500">
+                                <div class="flex items-center space-x-3">
+                                    <i class="fa-solid fa-money-bill-wave text-emerald-600 text-base"></i>
+                                    <div>
+                                        <p class="text-xs font-bold">Dinheiro em Espécie</p>
+                                        <p class="text-[10px] text-slate-400">Pague no momento da entrega</p>
+                                    </div>
+                                </div>
+                                <input type="radio" name="payment" value="cash" onchange="togglePaymentDetails()" class="accent-emerald-600">
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- PIX Code Dynamic Container -->
+                    <div id="pix-container" class="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 p-3 rounded-2xl space-y-2">
+                        <p class="text-[11px] font-bold text-emerald-800 dark:text-emerald-400">Chave PIX Copia e Cola:</p>
+                        <div class="flex items-center justify-between bg-white dark:bg-slate-800 p-2 rounded-xl text-[10px] font-mono text-slate-600 dark:text-slate-300">
+                            <span class="truncate">00020126360014BR.GOV.BCB.PIX0114+552199999999520400005303986</span>
+                            <button onclick="copyPixCode()" class="ml-2 text-emerald-600 font-bold hover:underline">Copiar</button>
+                        </div>
+                    </div>
+
+                    <!-- Change Needed Container (for Cash) -->
+                    <div id="cash-container" class="hidden bg-slate-50 dark:bg-slate-800 p-3 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
+                        <label class="text-[11px] font-bold text-slate-600 dark:text-slate-300">Precisa de troco para quanto?</label>
+                        <input type="text" id="cash-change-input" placeholder="Ex: R$ 50,00 ou R$ 100,00" class="w-full p-2 text-xs bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
+                    </div>
+
+                    <!-- Notes -->
+                    <div>
+                        <h4 class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Observações do Pedido</h4>
+                        <textarea id="order-notes" placeholder="Ex: Sem cebola, deixar na portaria, campainha quebrada..." class="w-full p-2.5 text-xs bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500" rows="2"></textarea>
+                    </div>
+                </div>
+
+                <div class="p-4 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
+                    <button onclick="confirmOrder()" class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white py-3 rounded-xl font-bold text-xs shadow-lg shadow-emerald-600/30 flex justify-center items-center gap-2 transition">
+                        <span>Confirmar e Fazer Pedido</span>
+                        <i class="fa-solid fa-circle-check text-sm"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- LIVE ORDER TRACKING SCREEN -->
+        <div id="tracking-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex flex-col justify-end">
+            <div class="bg-white dark:bg-slate-900 w-full h-[90%] rounded-t-3xl overflow-hidden flex flex-col slide-up">
+                
+                <div class="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                    <h3 class="text-sm font-bold">Rastreio do Pedido em Tempo Real</h3>
+                    <button onclick="closeTrackingModal()" class="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500">
+                        <i class="fa-solid fa-xmark text-xs"></i>
+                    </button>
+                </div>
+
+                <div class="flex-1 overflow-y-auto no-scrollbar p-5 space-y-5">
+                    
+                    <!-- ETA Banner -->
+                    <div class="text-center bg-emerald-50 dark:bg-emerald-500/10 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-500/20">
+                        <p class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider">Estimativa de Chegada</p>
+                        <h2 id="tracker-eta" class="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 my-1">20 - 30 min</h2>
+                        <p class="text-[11px] text-slate-500">Pedido #<span id="tracker-id">9821</span> • <span id="tracker-store">Empório das Bebidas</span></p>
+                    </div>
+
+                    <!-- Animated Progress Bar Timeline -->
+                    <div class="space-y-5 relative before:absolute before:left-4 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-800">
+                        
+                        <div id="track-step-1" class="relative flex items-center space-x-3">
+                            <div class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shadow-md z-10">
+                                <i class="fa-solid fa-check"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold">Pedido Confirmado</h4>
+                                <p class="text-[10px] text-slate-400">O estabelecimento recebeu seu pedido</p>
+                            </div>
+                        </div>
+
+                        <div id="track-step-2" class="relative flex items-center space-x-3 opacity-40">
+                            <div class="w-8 h-8 rounded-full bg-slate-300 dark:bg-slate-700 text-white flex items-center justify-center font-bold text-xs z-10 transition-colors">
+                                <i class="fa-solid fa-box-open"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold">Em Preparação / Separação</h4>
+                                <p class="text-[10px] text-slate-400">Seus itens estão sendo preparados</p>
+                            </div>
+                        </div>
+
+                        <div id="track-step-3" class="relative flex items-center space-x-3 opacity-40">
+                            <div class="w-8 h-8 rounded-full bg-slate-300 dark:bg-slate-700 text-white flex items-center justify-center font-bold text-xs z-10 transition-colors">
+                                <i class="fa-solid fa-motorcycle"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold">Saiu para Entrega</h4>
+                                <p class="text-[10px] text-slate-400">Entregador a caminho do seu endereço</p>
+                            </div>
+                        </div>
+
+                        <div id="track-step-4" class="relative flex items-center space-x-3 opacity-40">
+                            <div class="w-8 h-8 rounded-full bg-slate-300 dark:bg-slate-700 text-white flex items-center justify-center font-bold text-xs z-10 transition-colors">
+                                <i class="fa-solid fa-house-circle-check"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold">Entregue</h4>
+                                <p class="text-[10px] text-slate-400">Aproveite suas compras!</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Courier Info Card -->
+                    <div class="bg-slate-100 dark:bg-slate-800 p-3 rounded-2xl flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" class="w-10 h-10 rounded-full object-cover" alt="Entregador">
+                            <div>
+                                <h5 class="text-xs font-bold">Rafael Silva</h5>
+                                <p class="text-[10px] text-slate-500">Motospeed Express • Honda CG 160 (ABC-1234)</p>
+                            </div>
+                        </div>
+                        <div class="flex space-x-1.5">
+                            <button onclick="showToast('Ligando para o entregador...')" class="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs shadow-md">
+                                <i class="fa-solid fa-phone"></i>
+                            </button>
+                            <button onclick="showToast('Abrindo chat de mensagens...')" class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs shadow-md">
+                                <i class="fa-solid fa-comment"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="p-3 border-t border-slate-100 dark:border-slate-800">
+                    <button onclick="closeTrackingModal()" class="w-full py-2.5 bg-slate-100 dark:bg-slate-800 font-semibold rounded-xl text-xs">
+                        Minimizar Rastreamento
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ADDRESS SELECTOR MODAL -->
+        <div id="address-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex flex-col justify-end">
+            <div class="bg-white dark:bg-slate-900 w-full rounded-t-3xl p-5 space-y-3 slide-up">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-sm font-bold">Selecione o Endereço de Entrega</h3>
+                    <button onclick="closeAddressModal()" class="text-slate-500"><i class="fa-solid fa-xmark text-sm"></i></button>
+                </div>
+                <div class="space-y-2">
+                    <button onclick="setAddress('Rua das Flores, 123 - Centro')" class="w-full text-left p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-emerald-500 flex items-center space-x-3">
+                        <i class="fa-solid fa-house text-slate-400 text-sm"></i>
+                        <div>
+                            <p class="text-xs font-bold">Minha Casa</p>
+                            <p class="text-[10px] text-slate-500">Rua das Flores, 123 - Centro</p>
+                        </div>
+                    </button>
+                    <button onclick="setAddress('Av. Paulista, 1000 - Bela Vista')" class="w-full text-left p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-emerald-500 flex items-center space-x-3">
+                        <i class="fa-solid fa-building text-slate-400 text-sm"></i>
+                        <div>
+                            <p class="text-xs font-bold">Trabalho / Escritório</p>
+                            <p class="text-[10px] text-slate-500">Av. Paulista, 1000 - Bela Vista</p>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- JAVASCRIPT APPLICATION LOGIC -->
+    <script>
+        // DATA SOURCES (4 MAIN CATEGORIES: Food, Drinks, Pharma, Retail Store)
+        const categories = [
+            { id: 'all', name: 'Tudo', icon: 'fa-border-all' },
+            { id: 'food', name: 'Comidas', icon: 'fa-utensils' },
+            { id: 'drinks', name: 'Bebidas', icon: 'fa-wine-bottle' },
+            { id: 'pharma', name: 'Farmácia', icon: 'fa-prescription-bottle-medical' },
+            { id: 'store', name: 'Lojas Físicas', icon: 'fa-store' }
+        ];
+
+        const stores = [
+            // 1. FOOD STORES
+            {
+                id: 1,
+                name: 'Mamma Mia Pizzaria & Forno',
+                category: 'food',
+                rating: '4.9',
+                time: '30-40 min',
+                dist: '1.2 km',
+                fee: 5.90,
+                cover: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=600&q=80',
+                desc: 'Pizzas artesanais assadas em forno a lenha',
+                items: [
+                    { id: 101, name: 'Pizza Calabresa Gourmet', desc: 'Molho especial, calabreza fatiada, cebola roxa e azeitonas.', price: 54.90, tag: 'Mais Vendido', image: 'https://images.unsplash.com/photo-1628840042765-356cda07504e?auto=format&fit=crop&w=400&q=80' },
+                    { id: 102, name: 'Pizza 4 Queijos Trufada', desc: 'Muçarela, gorgonzola, catupiry, parmesão e azeite trufado.', price: 62.00, tag: 'Especial', image: 'https://images.unsplash.com/photo-1573821663912-569905455b1c?auto=format&fit=crop&w=400&q=80' }
+                ]
+            },
+            {
+                id: 2,
+                name: 'Burger Craft House',
+                category: 'food',
+                rating: '4.8',
+                time: '20-30 min',
+                dist: '2.0 km',
+                fee: 0, // Free delivery
+                cover: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?auto=format&fit=crop&w=600&q=80',
+                desc: 'Hambúrgueres artesanais 100% Angus',
+                items: [
+                    { id: 103, name: 'Smash Double Bacon', desc: 'Dois hambúrgueres de 90g, cheddar, bacon crocante e maionese verde.', price: 34.90, tag: 'Frete Grátis', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400&q=80' },
+                    { id: 104, name: 'Chicken Crispy Burguer', desc: 'Sobrecoxa empanada super crocante, salada coleslaw e picles.', price: 29.90, tag: 'Lançamento', image: 'https://images.unsplash.com/photo-1625813506062-0aeb1d7a094b?auto=format&fit=crop&w=400&q=80' }
+                ]
+            },
+
+            // 2. DRINKS / ADEGA
+            {
+                id: 3,
+                name: 'Adega Zé Gelada & Cervejas',
+                category: 'drinks',
+                rating: '4.9',
+                time: '15-25 min',
+                dist: '0.8 km',
+                fee: 3.90,
+                cover: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=600&q=80',
+                desc: 'Cervejas trincando, vinhos, destilados e gelo',
+                items: [
+                    { id: 201, name: 'Pack Cerveja Heineken 350ml (6 Unid)', desc: 'Lata 350ml entregue estupidamente gelada.', price: 32.90, tag: 'Trincando', image: 'https://images.unsplash.com/photo-1608270586620-248524c67de9?auto=format&fit=crop&w=400&q=80' },
+                    { id: 202, name: 'Vinho Red Blend Malbec 750ml', desc: 'Vinho tinto seco argentino encorpado.', price: 49.90, tag: 'Oferta', image: 'https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?auto=format&fit=crop&w=400&q=80' },
+                    { id: 203, name: 'Whisky Red Label 1 Litro', desc: 'Original garrafa 1L scotch whisky.', price: 89.90, tag: 'Premium', image: 'https://images.unsplash.com/photo-1527281400683-1aae777175f8?auto=format&fit=crop&w=400&q=80' }
+                ]
+            },
+
+            // 3. PHARMACY STORES
+            {
+                id: 4,
+                name: 'Drogaria São Paulo 24h',
+                category: 'pharma',
+                rating: '4.9',
+                time: '15-20 min',
+                dist: '0.5 km',
+                fee: 0,
+                cover: 'https://images.unsplash.com/photo-1586015555751-63bb77f4322a?auto=format&fit=crop&w=600&q=80',
+                desc: 'Medicamentos, dermocosméticos e cuidados diários',
+                items: [
+                    { id: 301, name: 'Dipirona Sódica 500mg 20 Cprs', desc: 'Analgésico e antitérmico para alívio de dores.', price: 8.90, tag: 'Medicamento', image: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=400&q=80' },
+                    { id: 302, name: 'Protetor Solar Facial FPS 60', desc: 'Toque seco e controle de oleosidade 40g.', price: 49.90, tag: 'Dermocosmético', image: 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?auto=format&fit=crop&w=400&q=80' },
+                    { id: 303, name: 'Vitamina C Efervescente 10 Cprs', desc: 'Suplemento para imunidade sabor laranja.', price: 14.90, tag: 'Vitaminas', image: 'https://images.unsplash.com/photo-1550572017-edf7e1ed9d41?auto=format&fit=crop&w=400&q=80' }
+                ]
+            },
+
+            // 4. RETAIL STORES
+            {
+                id: 5,
+                name: 'Pet Shop Bicho Feliz',
+                category: 'store',
+                rating: '4.8',
+                time: '25-35 min',
+                dist: '2.5 km',
+                fee: 6.00,
+                cover: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=600&q=80',
+                desc: 'Rações, petiscos e brinquedos para cães e gatos',
+                items: [
+                    { id: 401, name: 'Ração Premium Cães Adultos 3kg', desc: 'Sabor carne e vegetais, rica em ômega 3 e 6.', price: 68.90, tag: 'Pet Care', image: 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?auto=format&fit=crop&w=400&q=80' },
+                    { id: 402, name: 'Petisco Snacker Cães 150g', desc: 'Petisco crocante para adestramento.', price: 12.90, tag: 'Snack', image: 'https://images.unsplash.com/photo-1535294435445-d7249524ef2e?auto=format&fit=crop&w=400&q=80' }
+                ]
+            },
+            {
+                id: 6,
+                name: 'Tech & Cell Acessórios',
+                category: 'store',
+                rating: '4.7',
+                time: '20-30 min',
+                dist: '1.8 km',
+                fee: 4.50,
+                cover: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=600&q=80',
+                desc: 'Carregadores rápidos, fones e acessórios tech',
+                items: [
+                    { id: 403, name: 'Cabo USB-C Carga Rápida 2m', desc: 'Cabo trançado de nylon super resistente.', price: 32.00, tag: 'Tech', image: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?auto=format&fit=crop&w=400&q=80' },
+                    { id: 404, name: 'Fone Bluetooth Sem Fio Sport', desc: 'Bateria de até 8 horas com isolamento acústico.', price: 89.90, tag: 'Destaque', image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=400&q=80' }
+                ]
+            }
+        ];
+
+        // APP STATE
+        let activeCategory = 'all';
+        let cart = [];
+        let activeStore = null;
+        let appliedDiscount = 0;
+        let activeOrder = null;
+
+        // INITIALIZATION
+        document.addEventListener('DOMContentLoaded', () => {
+            updateClock();
+            setInterval(updateClock, 1000);
+            renderCategoryPills();
+            renderStores();
+        });
+
+        function updateClock() {
+            const now = new Date();
+            const h = String(now.getHours()).padStart(2, '0');
+            const m = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('current-time').innerText = `${h}:${m}`;
+        }
+
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            const icon = document.getElementById('theme-icon');
+            icon.className = document.documentElement.classList.contains('dark') ? 'fa-solid fa-sun text-xs' : 'fa-solid fa-moon text-xs';
+        }
+
+        function showToast(msg) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-4 py-2.5 rounded-xl text-xs font-semibold shadow-xl flex items-center gap-2 toast-slide mb-2';
+            toast.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-500"></i> ${msg}`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 2500);
+        }
+
+        function showNotifications() {
+            showToast('Você tem 2 novos cupons disponíveis!');
+        }
+
+        // CATEGORY PILLS & RENDER LOGIC
+        function renderCategoryPills() {
+            const container = document.getElementById('main-category-pills');
+            container.innerHTML = categories.map(cat => `
+                <button onclick="switchMainCategory('${cat.id}')" class="px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap flex items-center gap-1.5 transition ${activeCategory === cat.id ? 'bg-emerald-600 text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'}">
+                    <i class="fa-solid ${cat.icon} text-[11px]"></i>
+                    <span>${cat.name}</span>
+                </button>
+            `).join('');
+        }
+
+        function switchMainCategory(catId) {
+            activeCategory = catId;
+            renderCategoryPills();
+            renderStores();
+
+            // Update Dynamic Banner Context
+            const bannerImg = document.getElementById('banner-img');
+            const bannerTitle = document.getElementById('banner-title');
+            const bannerSub = document.getElementById('banner-sub');
+            const bannerTag = document.getElementById('banner-tag');
+
+            if (catId === 'drinks') {
+                bannerImg.src = 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=800&q=80';
+                bannerTitle.innerText = 'Cervejas & Bebidas com até 30% OFF!';
+                bannerSub.innerText = 'Entregues trincando com o cupom BEBIDAS30';
+                bannerTag.innerText = 'Gelada Rápida';
+            } else if (catId === 'pharma') {
+                bannerImg.src = 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=800&q=80';
+                bannerTitle.innerText = 'Remédios & Farmácia com Frete Grátis!';
+                bannerSub.innerText = 'Use o cupom FARMACIA15 no checkout';
+                bannerTag.innerText = 'Saúde 24h';
+            } else if (catId === 'store') {
+                bannerImg.src = 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=800&q=80';
+                bannerTitle.innerText = 'Pet Shop, Tech & Conveniência';
+                bannerSub.innerText = 'Receba em até 30 minutos em sua casa';
+                bannerTag.innerText = 'Lojas Físicas';
+            } else {
+                bannerImg.src = 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80';
+                bannerTitle.innerText = 'R$ 10 OFF no seu primeiro pedido!';
+                bannerSub.innerText = 'Use o cupom PRIMEIRA10 na finalização';
+                bannerTag.innerText = 'Cupom da Semana';
+            }
+        }
+
+        function focusSearch() {
+            document.getElementById('search-input').focus();
+        }
+
+        function clearSearch() {
+            document.getElementById('search-input').value = '';
+            document.getElementById('clear-search-btn').classList.add('hidden');
+            renderStores();
+        }
+
+        function handleSearch(query) {
+            const clearBtn = document.getElementById('clear-search-btn');
+            if (query.trim().length > 0) {
+                clearBtn.classList.remove('hidden');
+            } else {
+                clearBtn.classList.add('hidden');
+            }
+            renderStores(query.toLowerCase());
+        }
+
+        function renderStores(filterText = '') {
+            const container = document.getElementById('stores-container');
+            let filtered = stores.filter(s => {
+                const matchesCat = activeCategory === 'all' || s.category === activeCategory;
+                const matchesSearch = s.name.toLowerCase().includes(filterText) || 
+                                      s.desc.toLowerCase().includes(filterText) ||
+                                      s.items.some(i => i.name.toLowerCase().includes(filterText));
+                return matchesCat && matchesSearch;
+            });
+
+            document.getElementById('stores-count').innerText = `${filtered.length} disponíveis`;
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-10 text-slate-400">
+                        <i class="fa-solid fa-store-slash text-3xl mb-2"></i>
+                        <p class="text-xs">Nenhum estabelecimento encontrado.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filtered.map(store => `
+                <div onclick="openStoreModal(${store.id})" class="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition cursor-pointer flex gap-3 group">
+                    <img src="${store.cover}" class="w-20 h-20 rounded-xl object-cover group-hover:scale-105 transition" alt="${store.name}">
+                    <div class="flex-1 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-start">
+                                <h4 class="font-bold text-xs text-slate-800 dark:text-slate-100">${store.name}</h4>
+                                <span class="text-[10px] font-bold text-amber-500 bg-amber-50 dark:bg-amber-500/10 px-1.5 py-0.5 rounded">
+                                    <i class="fa-solid fa-star text-[9px]"></i> ${store.rating}
+                                </span>
+                            </div>
+                            <p class="text-[10px] text-slate-400 line-clamp-1 mt-0.5">${store.desc}</p>
+                        </div>
+                        <div class="flex items-center space-x-2 text-[10px] text-slate-500 font-medium">
+                            <span><i class="fa-regular fa-clock mr-0.5 text-emerald-600"></i>${store.time}</span>
+                            <span>•</span>
+                            <span class="${store.fee === 0 ? 'text-emerald-600 font-bold' : ''}">
+                                ${store.fee === 0 ? 'Frete Grátis' : 'R$ ' + store.fee.toFixed(2).replace('.', ',')}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // STORE DETAILS & CATALOG
+        function openStoreModal(storeId) {
+            activeStore = stores.find(s => s.id === storeId);
+            
+            document.getElementById('store-modal-cover').src = activeStore.cover;
+            document.getElementById('store-modal-name').innerText = activeStore.name;
+            document.getElementById('store-modal-desc').innerText = activeStore.desc;
+            document.getElementById('store-modal-time').innerText = activeStore.time;
+            document.getElementById('store-modal-dist').innerText = activeStore.dist;
+            document.getElementById('store-modal-rating-val').innerText = activeStore.rating;
+            document.getElementById('store-modal-fee').innerText = activeStore.fee === 0 ? 'Frete Grátis' : `R$ ${activeStore.fee.toFixed(2).replace('.', ',')}`;
+            document.getElementById('store-modal-badge').innerText = activeStore.category.toUpperCase();
+
+            renderStoreItems();
+            document.getElementById('store-modal').classList.remove('hidden');
+        }
+
+        function renderStoreItems() {
+            const itemsContainer = document.getElementById('store-modal-items');
+            itemsContainer.innerHTML = activeStore.items.map(item => {
+                const cartItem = cart.find(c => c.id === item.id);
+                const qty = cartItem ? cartItem.qty : 0;
+
+                return `
+                    <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800/40 p-3 rounded-2xl border border-slate-100 dark:border-slate-800">
+                        <div class="flex-1 pr-3">
+                            <div class="flex items-center gap-1.5 mb-1">
+                                <span class="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-[9px] font-bold px-2 py-0.5 rounded-full">${item.tag}</span>
+                            </div>
+                            <h5 class="text-xs font-bold text-slate-800 dark:text-slate-100">${item.name}</h5>
+                            <p class="text-[10px] text-slate-500 line-clamp-2 my-1">${item.desc}</p>
+                            <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400">R$ ${item.price.toFixed(2).replace('.', ',')}</span>
+                        </div>
+                        <div class="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0">
+                            <img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover">
+                            ${qty > 0 ? `
+                                <div class="absolute bottom-1 right-1 bg-emerald-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-lg shadow-md flex items-center gap-1">
+                                    <button onclick="addToCart(${item.id}, -1)" class="hover:opacity-80">-</button>
+                                    <span>${qty}</span>
+                                    <button onclick="addToCart(${item.id}, 1)" class="hover:opacity-80">+</button>
+                                </div>
+                            ` : `
+                                <button onclick="addToCart(${item.id}, 1)" class="absolute bottom-1 right-1 bg-emerald-600 text-white w-6 h-6 rounded-lg flex items-center justify-center shadow-md active:scale-90 transition">
+                                    <i class="fa-solid fa-plus text-[10px]"></i>
+                                </button>
+                            `}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function closeStoreModal() {
+            document.getElementById('store-modal').classList.add('hidden');
+        }
+
+        // CART LOGIC
+        function addToCart(itemId, delta = 1) {
+            const item = activeStore.items.find(i => i.id === itemId);
+            const existing = cart.find(c => c.id === itemId);
+
+            if (existing) {
+                existing.qty += delta;
+                if (existing.qty <= 0) {
+                    cart = cart.filter(c => c.id !== itemId);
+                }
+            } else if (delta > 0) {
+                cart.push({ ...item, qty: 1, storeName: activeStore.name, storeFee: activeStore.fee });
+            }
+
+            updateCartUI();
+            if (activeStore) renderStoreItems();
+            if (delta > 0) showToast(`${item.name} adicionado à sacola!`);
+        }
+
+        function updateCartQty(itemId, delta) {
+            const item = cart.find(c => c.id === itemId);
+            if (!item) return;
+
+            item.qty += delta;
+            if (item.qty <= 0) {
+                cart = cart.filter(c => c.id !== itemId);
+            }
+            updateCartUI();
+            if (activeStore) renderStoreItems();
+        }
+
+        function updateCartUI() {
+            const totalQty = cart.reduce((sum, i) => sum + i.qty, 0);
+            const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+            const fee = cart.length > 0 ? cart[0].storeFee : 0;
+            const total = Math.max(0, subtotal + fee - appliedDiscount);
+
+            // Badges & Floating Bar
+            document.getElementById('mini-cart-qty').innerText = totalQty;
+            document.getElementById('mini-cart-total').innerText = `R$ ${total.toFixed(2).replace('.', ',')}`;
+
+            const badge = document.getElementById('header-cart-badge');
+            if (totalQty > 0) {
+                badge.innerText = totalQty;
+                badge.classList.remove('hidden');
+                document.getElementById('floating-cart-bar').classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+                document.getElementById('floating-cart-bar').classList.add('hidden');
+                closeCartModal();
+            }
+
+            // Cart Drawer Content
+            const container = document.getElementById('cart-items-container');
+            if (cart.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-slate-400">
+                        <i class="fa-solid fa-bag-shopping text-3xl mb-2"></i>
+                        <p class="text-xs">Sua sacola está vazia.</p>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = cart.map(item => `
+                    <div class="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-2xl border border-slate-100 dark:border-slate-800">
+                        <div class="flex items-center space-x-3">
+                            <img src="${item.image}" class="w-10 h-10 rounded-xl object-cover" alt="${item.name}">
+                            <div>
+                                <h5 class="text-xs font-bold">${item.name}</h5>
+                                <p class="text-xs text-emerald-600 font-semibold">R$ ${(item.price * item.qty).toFixed(2).replace('.', ',')}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2 py-1">
+                            <button onclick="updateCartQty(${item.id}, -1)" class="text-slate-400 hover:text-slate-600 text-xs px-1">-</button>
+                            <span class="text-xs font-bold w-4 text-center">${item.qty}</span>
+                            <button onclick="updateCartQty(${item.id}, 1)" class="text-emerald-600 text-xs px-1">+</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Calculation Labels
+            document.getElementById('cart-subtotal').innerText = `R$ ${subtotal.toFixed(2).replace('.', ',')}`;
+            document.getElementById('cart-fee').innerText = fee === 0 ? 'GRÁTIS' : `R$ ${fee.toFixed(2).replace('.', ',')}`;
+            document.getElementById('cart-total').innerText = `R$ ${total.toFixed(2).replace('.', ',')}`;
+        }
+
+        function applyCoupon() {
+            const input = document.getElementById('coupon-input').value.trim().toUpperCase();
+            if (input === 'PRIMEIRA10') {
+                appliedDiscount = 10.00;
+                document.getElementById('discount-row').classList.remove('hidden');
+                document.getElementById('cart-discount').innerText = `-R$ 10,00`;
+                updateCartUI();
+                showToast('Cupom PRIMEIRA10 aplicado (R$ 10 OFF)!');
+            } else if (input === 'BEBIDAS30') {
+                appliedDiscount = 15.00;
+                document.getElementById('discount-row').classList.remove('hidden');
+                document.getElementById('cart-discount').innerText = `-R$ 15,00`;
+                updateCartUI();
+                showToast('Cupom BEBIDAS30 aplicado (R$ 15 OFF)!');
+            } else if (input === 'FARMACIA15') {
+                appliedDiscount = 8.00;
+                document.getElementById('discount-row').classList.remove('hidden');
+                document.getElementById('cart-discount').innerText = `-R$ 8,00`;
+                updateCartUI();
+                showToast('Cupom FARMACIA15 aplicado (R$ 8 OFF)!');
+            } else {
+                showToast('Cupom inválido. Teste PRIMEIRA10');
+            }
+        }
+
+        // CHECKOUT & PAYMENT FLOW
+        function openCartModal() {
+            if (cart.length === 0) return showToast('Sua sacola está vazia!');
+            document.getElementById('cart-modal').classList.remove('hidden');
+        }
+        function closeCartModal() {
+            document.getElementById('cart-modal').classList.add('hidden');
+        }
+
+        function goToCheckout() {
+            closeCartModal();
+            document.getElementById('checkout-modal').classList.remove('hidden');
+        }
+        function closeCheckoutModal() {
+            document.getElementById('checkout-modal').classList.add('hidden');
+        }
+
+        function togglePaymentDetails() {
+            const method = document.querySelector('input[name="payment"]:checked').value;
+            const pixBox = document.getElementById('pix-container');
+            const cashBox = document.getElementById('cash-container');
+            
+            pixBox.style.display = method === 'pix' ? 'block' : 'none';
+            cashBox.style.display = method === 'cash' ? 'block' : 'none';
+        }
+
+        function copyPixCode() {
+            showToast('Chave PIX copiada!');
+        }
+
+        function confirmOrder() {
+            closeCheckoutModal();
+
+            activeOrder = {
+                id: Math.floor(1000 + Math.random() * 9000),
+                storeName: cart[0]?.storeName || 'SuperApp Delivery',
+                status: 1
+            };
+
+            cart = [];
+            updateCartUI();
+
+            // Open Tracking Modal
+            document.getElementById('tracker-id').innerText = activeOrder.id;
+            document.getElementById('tracker-store').innerText = activeOrder.storeName;
+            document.getElementById('tracking-modal').classList.remove('hidden');
+            document.getElementById('active-order-badge').classList.remove('hidden');
+
+            simulateOrderTracking();
+        }
+
+        // SIMULATE LIVE DELIVERY STATUS
+        function simulateOrderTracking() {
+            const s1 = document.getElementById('track-step-1');
+            const s2 = document.getElementById('track-step-2');
+            const s3 = document.getElementById('track-step-3');
+            const s4 = document.getElementById('track-step-4');
+
+            [s2, s3, s4].forEach(s => s.classList.add('opacity-40'));
+
+            setTimeout(() => {
+                s2.classList.remove('opacity-40');
+                s2.querySelector('div').classList.replace('bg-slate-300', 'bg-emerald-600');
+                s2.querySelector('div').classList.replace('dark:bg-slate-700', 'bg-emerald-600');
+            }, 3000);
+
+            setTimeout(() => {
+                s3.classList.remove('opacity-40');
+                s3.querySelector('div').classList.replace('bg-slate-300', 'bg-emerald-600');
+                s3.querySelector('div').classList.replace('dark:bg-slate-700', 'bg-emerald-600');
+            }, 7000);
+
+            setTimeout(() => {
+                s4.classList.remove('opacity-40');
+                s4.querySelector('div').classList.replace('bg-slate-300', 'bg-emerald-500');
+                s4.querySelector('div').classList.replace('dark:bg-slate-700', 'bg-emerald-500');
+                document.getElementById('tracker-eta').innerText = 'Entregue!';
+            }, 11000);
+        }
+
+        function openOrdersModal() {
+            if (activeOrder) {
+                document.getElementById('tracking-modal').classList.remove('hidden');
+            } else {
+                showToast('Você não possui nenhum pedido em andamento.');
+            }
+        }
+
+        function closeTrackingModal() {
+            document.getElementById('tracking-modal').classList.add('hidden');
+        }
+
+        // ADDRESS MODAL LOGIC
+        function openAddressModal() {
+            document.getElementById('address-modal').classList.remove('hidden');
+        }
+        function closeAddressModal() {
+            document.getElementById('address-modal').classList.add('hidden');
+        }
+        function setAddress(addr) {
+            document.getElementById('user-address-text').innerText = addr;
+            document.getElementById('checkout-address-text').innerText = addr;
+            closeAddressModal();
+            showToast('Endereço alterado!');
+        }
+
+        function switchNavTab(tab) {
+            ['home', 'search', 'orders', 'profile'].forEach(t => {
+                const btn = document.getElementById(`nav-${t}`);
+                if (t === tab) {
+                    btn.className = 'flex flex-col items-center space-y-0.5 text-emerald-600 dark:text-emerald-400';
+                } else {
+                    btn.className = 'flex flex-col items-center space-y-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200';
+                }
+            });
+        }
+
+        function openProfileModal() {
+            showToast('Perfil do cliente em desenvolvimento!');
+        }
+    </script>
+</body>
+</html>
